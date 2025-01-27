@@ -14,6 +14,8 @@ import hashlib
 
 import time
 
+from db_functions import delete_duplicate_websites
+
 
 # Azure Storage Configuration
 AZURE_STORAGE_CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=osintwebstorage;AccountKey=TgYesm49TbHEI0EqeUjXVShCui7ImRuE18pfbBiY2tfW6XteK//QymqCspk5/PBmdGceMO9LKcYI+AStcAq55A==;EndpointSuffix=core.windows.net"
@@ -200,8 +202,48 @@ def update_favicons_in_db(db_path, max_workers=10):
         print(f"Error updating favicons in database: {e}")
 
 
+def delete_blob(container_client, blob_name):
+    """Delete a single blob from the container."""
+    try:
+        container_client.delete_blob(blob_name)
+        print(f"Deleted blob: {blob_name}")
+    except Exception as e:
+        print(f"Error deleting blob {blob_name}: {e}")
+
+
+def delete_all_blobs_from_container_with_threading(connection_string, container_name, max_workers=100):
+    """Delete all blobs from the specified Azure Blob Storage container using multithreading."""
+    try:
+        # Initialize the Blob Service Client
+        blob_service_client = BlobServiceClient.from_connection_string(
+            connection_string)
+        container_client = blob_service_client.get_container_client(
+            container_name)
+
+        # List all blobs in the container
+        print(f"Fetching blobs from container: {container_name}")
+        blobs = [blob.name for blob in container_client.list_blobs()]
+
+        if not blobs:
+            print("No blobs found in the container.")
+            return
+
+        print(f"Found {len(blobs)} blobs. Starting deletion with {
+              max_workers} threads.")
+
+        # Use ThreadPoolExecutor for multithreaded deletion
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            executor.map(lambda blob_name: delete_blob(
+                container_client, blob_name), blobs)
+
+        print("All blobs deleted successfully.")
+    except Exception as e:
+        print(f"Error deleting blobs: {e}")
+
+
 # Example usage
 if __name__ == "__main__":
     database_path = "backend/companies.db"  # Path to your SQLite database
     # Adjust max_workers as needed based on your system resources
-    update_favicons_in_db(database_path, max_workers=50)
+    # update_favicons_in_db(database_path, 5)
+    delete_duplicate_websites(database_path)

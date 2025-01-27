@@ -7,7 +7,7 @@ export interface Company {
   linkedin: string | null;
   facebook: string | null;
   twitter: string | null;
-  favicon: string | null;
+  image_id: number;
 }
 
 export interface ApiResponse {
@@ -16,4 +16,9 @@ export interface ApiResponse {
   page: number;
   size: number;
   pages: number;
+}
+
+export interface CompanyImage {
+  id: number;
+  image_url: string;
 }

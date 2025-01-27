@@ -1,29 +1,50 @@
-import type { Company } from "../types";
+import { useState, useEffect } from "react";
+import type { Company, CompanyImage } from "../types";
 
 interface CompanyListProps {
   companies: Company[];
 }
 
 export function CompanyList({ companies }: CompanyListProps) {
+  const [companyImages, setCompanyImages] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const imagePromises = companies
+          .filter((company) => company.image_id)
+          .map((company) =>
+            fetch(`http://127.0.0.1:8000/company-images/${company.image_id}`)
+              .then((res) => res.json())
+              .then((data: CompanyImage) => ({ id: company.image_id, url: data.image_url }))
+              .catch(() => ({ id: company.image_id, url: "/placeholder.svg" }))
+          );
+
+        const images = await Promise.all(imagePromises);
+        const imageMap = images.reduce((acc, { id, url }) => ({ ...acc, [id]: url }), {} as Record<number, string>);
+
+        setCompanyImages(imageMap);
+      } catch (error) {
+        console.error("Error fetching company images:", error);
+      }
+    };
+
+    fetchImages();
+  }, [companies]);
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {companies.map((company) => (
         <div key={company.id} className="border rounded-lg p-4 shadow-sm flex flex-col items-center">
           <div className="mb-4 w-20 h-20 flex items-center justify-center">
-            {company.favicon ? (
-              <img
-                src={company.favicon || "/placeholder.svg"}
-                alt={`${company.website} favicon`}
-                className="w-20 h-20 object-contain"
-                onError={(e) => {
-                  e.currentTarget.src = "/placeholder.svg?height=80&width=80";
-                }}
-              />
-            ) : (
-              <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-gray-500 text-3xl">{company.website.charAt(0).toUpperCase()}</span>
-              </div>
-            )}
+            <img
+              src={companyImages[company.image_id] || "/placeholder.svg"}
+              alt={`${company.website} logo`}
+              className="w-20 h-20 object-contain"
+              onError={(e) => {
+                e.currentTarget.src = "/placeholder.svg";
+              }}
+            />
           </div>
           <h2 className="text-xl font-semibold text-center mb-2">{company.website}</h2>
           <p className="text-sm text-gray-600 mb-2 text-center">Founded: {company.year_founded || "N/A"}</p>

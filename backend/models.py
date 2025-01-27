@@ -45,7 +45,7 @@ class CompanyBase(SQLModel):
     linkedin: str | None = Field(default=None, max_length=256)
     facebook: str | None = Field(default=None, max_length=256)
     twitter: str | None = Field(default=None, max_length=256)
-    favicon: str | None = Field(default=None, max_length=256)
+    image_id: int = Field(foreign_key='company_images.id')
 
 
 class Company(CompanyBase, table=True):
@@ -55,6 +55,23 @@ class Company(CompanyBase, table=True):
 
 
 class CompanyPublic(CompanyBase):
+    id: int
+
+
+# Company Images models
+class CompanyImageBase(SQLModel):
+    company_id: int = Field(foreign_key='companies.id')
+    image_url: str = Field(default=None, max_length=256)
+    image_hash: str = Field(default=None, max_length=256)
+
+
+class CompanyImage(CompanyImageBase, table=True):
+    __tablename__ = 'company_images'
+
+    id: int | None = Field(default=None, primary_key=True)
+
+
+class CompanyImagePublic(CompanyImageBase):
     id: int
 
 

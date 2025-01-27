@@ -6,8 +6,8 @@ interface PaginationProps {
 }
 
 export function Pagination({ currentPage, totalPages }: PaginationProps) {
-  const pageNumbers = [];
   const maxVisiblePages = 5;
+  const pageNumbers: number[] = [];
 
   let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
   const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
@@ -20,22 +20,21 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
     pageNumbers.push(i);
   }
 
+  const createPageLink = (page: number, label: React.ReactNode, isDisabled: boolean) => (
+    <a
+      href={isDisabled ? undefined : `/page/${page}`}
+      className={`p-2 rounded ${isDisabled ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-blue-100"}`}
+      aria-disabled={isDisabled}
+    >
+      {label}
+    </a>
+  );
+
   return (
     <nav className="flex justify-center items-center space-x-2 mt-8">
-      <a
-        href={`/page/1`}
-        className={`p-2 rounded ${currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-blue-100"}`}
-        aria-label="First page"
-      >
-        <ChevronsLeft className="w-5 h-5" />
-      </a>
-      <a
-        href={`/page/${currentPage - 1}`}
-        className={`p-2 rounded ${currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-blue-100"}`}
-        aria-label="Previous page"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </a>
+      {createPageLink(1, <ChevronsLeft className="w-5 h-5" />, currentPage === 1)}
+      {createPageLink(currentPage - 1, <ChevronLeft className="w-5 h-5" />, currentPage === 1)}
+
       {startPage > 1 && (
         <>
           <a href="/page/1" className="px-3 py-2 rounded text-blue-600 hover:bg-blue-100">
@@ -44,6 +43,7 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
           {startPage > 2 && <span className="px-3 py-2">...</span>}
         </>
       )}
+
       {pageNumbers.map((number) => (
         <a
           key={number}
@@ -53,6 +53,7 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
           {number}
         </a>
       ))}
+
       {endPage < totalPages && (
         <>
           {endPage < totalPages - 1 && <span className="px-3 py-2">...</span>}
@@ -61,20 +62,9 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
           </a>
         </>
       )}
-      <a
-        href={`/page/${currentPage + 1}`}
-        className={`p-2 rounded ${currentPage === totalPages ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-blue-100"}`}
-        aria-label="Next page"
-      >
-        <ChevronRight className="w-5 h-5" />
-      </a>
-      <a
-        href={`/page/${totalPages}`}
-        className={`p-2 rounded ${currentPage === totalPages ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-blue-100"}`}
-        aria-label="Last page"
-      >
-        <ChevronsRight className="w-5 h-5" />
-      </a>
+
+      {createPageLink(currentPage + 1, <ChevronRight className="w-5 h-5" />, currentPage === totalPages)}
+      {createPageLink(totalPages, <ChevronsRight className="w-5 h-5" />, currentPage === totalPages)}
     </nav>
   );
 }

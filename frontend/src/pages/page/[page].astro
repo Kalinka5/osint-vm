@@ -1,41 +1,42 @@
 ---
+import Layout from '../../layouts/Layout.astro';
 import { CompanyList } from '../../components/CompanyList';
 import { Pagination } from '../../components/Pagination';
 import type { ApiResponse } from '../../types';
 
 export async function getStaticPaths() {
   const response = await fetch('http://127.0.0.1:8000/companies/?page=1&size=9');
+  if (!response.ok) {
+    throw new Error("Failed to fetch total pages");
+  }
   const data: ApiResponse = await response.json();
-  const pages = Array.from({ length: data.pages }, (_, i) => i + 1);
-  
-  return pages.map(page => ({
-    params: { page: page.toString() },
-    props: { apiUrl: `http://127.0.0.1:8000/companies/?page=${page}&size=9` }
-  }));
+  const totalPages = data.pages;
+
+  return Array.from({ length: totalPages }, (_, i) => {
+    const page = i + 1;
+    return {
+      params: { page: page.toString() },
+      props: { apiUrl: `http://127.0.0.1:8000/companies/?page=${page}&size=9` },
+    };
+  });
 }
 
 const { page } = Astro.params;
 const { apiUrl } = Astro.props;
 
 const response = await fetch(apiUrl);
+if (!response.ok) {
+  throw new Error(`Failed to fetch data for page ${page}`);
+}
 const data: ApiResponse = await response.json();
 
-const { items: companies, total, page: currentPage, size, pages } = data;
+const { items: companies, page: currentPage, pages: totalPages } = data;
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="generator" content={Astro.generator} />
-    <title>All Companies - Page {currentPage}</title>
-  </head>
-  <body>
-    <main class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold mb-6">All Companies</h1>
-      <CompanyList companies={companies} />
-      <Pagination currentPage={currentPage} totalPages={pages} />
-    </main>
-  </body>
-</html>
+<Layout title={`Company Directory - Page ${currentPage}`}>
+  <main class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6 text-blue-600">All Companies</h1>
+    <CompanyList companies={companies} client:load />
+    <Pagination currentPage={currentPage} totalPages={totalPages} />
+  </main>
+</Layout>

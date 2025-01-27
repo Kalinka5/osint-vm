@@ -1,7 +1,9 @@
 from enum import Enum
 
 from fastapi import FastAPI, HTTPException
-from sqlmodel import select
+from fastapi.middleware.cors import CORSMiddleware
+
+from sqlmodel import select, func
 
 from fastapi_pagination import Page, add_pagination, paginate
 
@@ -13,12 +15,27 @@ class Tags(Enum):
     addresses = 'Addresses'
     cities = 'Cities'
     companies = 'Companies'
+    company_images = 'Company Images'
     countries = 'Countries'
     industries = 'Industries'
     number_of_employees = 'Number of employees'
 
 
+origins = [
+    "http://localhost.tiangolo.com",
+    "https://localhost.tiangolo.com",
+    "http://localhost",
+    "http://localhost:4321",
+]
+
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 add_pagination(app)
 
 
@@ -224,8 +241,22 @@ async def create_company(company: CompanyBase, session: SessionDep):
 @app.get("/companies/", tags=[Tags.companies], summary="Get all companies")
 async def read_companies(session: SessionDep) -> Page[CompanyPublic]:
     """Retrieve a paginated list of all companies. You can choose page and how many companies will be displayed in each page"""
-    # Filter companies where the favicon column is not null
-    companies_query = select(Company).where(Company.favicon.is_not(None))
+    # Filter companies where the image_id column is not null
+    # Subquery to group by image_id and count occurrences
+    image_count_subquery = (
+        select(Company.image_id, func.count(Company.image_id).label("count"))
+        .where(Company.image_id.is_not(None))
+        .group_by(Company.image_id)
+        .subquery()
+    )
+
+    # Query to get companies with unique image_id
+    companies_query = (
+        select(Company)
+        .join(image_count_subquery, Company.image_id == image_count_subquery.c.image_id)
+        .where(image_count_subquery.c.count == 1)
+    )
+
     companies = session.exec(companies_query).all()
 
     return paginate(companies)
@@ -290,6 +321,28 @@ def delete_company(company_id: int, session: SessionDep):
     return {"ok": True}
 
 
+@app.get("/companies-images/", response_model=list[CompanyImagePublic], tags=[Tags.company_images], summary="Get all company images")
+async def read_company_images(session: SessionDep):
+    """Retrieve a paginated list of all companies. You can choose page and how many companies will be displayed in each page"""
+    company_images = session.exec(select(CompanyImage)).all()
+
+    return company_images
+
+
+@app.get('/company-images/{company_image_id}', response_model=CompanyImagePublic, tags=[Tags.company_images], summary="Get a company image by id")
+async def get_company_image(company_image_id: int, session: SessionDep):
+    """Retreive a company image information by its ID
+
+    - **company_image_id**: The ID of the company image to retrieve
+    """
+    company_image = session.get(CompanyImage, company_image_id)
+
+    if not company_image:
+        raise HTTPException(status_code=404, detail="Company image not found")
+
+    return company_image
+
+
 @app.post('/countries/', status_code=201, response_model=CountryPublic, tags=[Tags.countries], summary="Create a country")
 async def create_country(country: CountryBase, session: SessionDep):
     """Create a country with name value:
@@ -304,12 +357,12 @@ async def create_country(country: CountryBase, session: SessionDep):
     return db_country
 
 
-@app.get('/countries/', tags=[Tags.countries], summary="Get all countries")
-async def read_countries(session: SessionDep) -> Page[CountryPublic]:
+@app.get('/countries/', response_model=list[CountryPublic], tags=[Tags.countries], summary="Get all countries")
+async def read_countries(session: SessionDep):
     """Retrieve a paginated list of all countries. You can choose page and how many countries will be displayed in each page"""
     countries = session.exec(select(Country)).all()
 
-    return paginate(countries)
+    return countries
 
 
 @app.get('/countries/{country_id}', response_model=CountryPublic, tags=[Tags.countries], summary="Get a country by id")
@@ -377,12 +430,12 @@ async def create_industry(industry: IndustryBase, session: SessionDep):
     return db_industry
 
 
-@app.get('/industries/', tags=[Tags.industries], summary="Get all industries")
-async def read_industries(session: SessionDep) -> Page[IndustryPublic]:
+@app.get('/industries/', response_model=list[IndustryPublic], tags=[Tags.industries], summary="Get all industries")
+async def read_industries(session: SessionDep):
     """Retrieve a paginated list of all industries. You can choose page and how many industries will be displayed in each page"""
     industries = session.exec(select(Industry)).all()
 
-    return paginate(industries)
+    return industries
 
 
 @app.get('/industries/{industry_id}', response_model=IndustryPublic, tags=[Tags.industries], summary="Get an industry by id")
@@ -451,12 +504,12 @@ async def create_number_of_employees(number_of_employees: NumberOfEmployeesBase,
     return db_numbers_of_emloyees
 
 
-@app.get('/numbers-of-employees/', tags=[Tags.number_of_employees], summary="Get all groups of number of emloyees")
-async def read_number_of_employees(session: SessionDep) -> Page[NumberOfEmployeesPublic]:
+@app.get('/numbers-of-employees/', response_model=list[NumberOfEmployeesPublic], tags=[Tags.number_of_employees], summary="Get all groups of number of emloyees")
+async def read_number_of_employees(session: SessionDep):
     """Retrieve a paginated list of all groups of number of employees. You can choose page and how many groups of number of employees will be displayed in each page"""
     numbers_of_employees = session.exec(select(NumberOfEmployees)).all()
 
-    return paginate(numbers_of_employees)
+    return numbers_of_employees
 
 
 @app.get('/numbers-of-employees/{number_id}', response_model=NumberOfEmployeesPublic, tags=[Tags.number_of_employees], summary="Get a group of number of emloyees")
