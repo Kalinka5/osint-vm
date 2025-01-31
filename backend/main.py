@@ -22,10 +22,8 @@ class Tags(Enum):
 
 
 origins = [
-    "http://localhost.tiangolo.com",
-    "https://localhost.tiangolo.com",
-    "http://localhost",
     "http://localhost:4321",
+    "https://c9010a49.osint-agency-online.pages.dev"
 ]
 
 app = FastAPI()

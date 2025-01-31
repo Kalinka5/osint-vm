@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import type { Company, CompanyImage } from "../types";
 
+import { API_URL } from "../contants.js";
+
 interface CompanyListProps {
   companies: Company[];
 }
@@ -14,7 +16,7 @@ export function CompanyList({ companies }: CompanyListProps) {
         const imagePromises = companies
           .filter((company) => company.image_id)
           .map((company) =>
-            fetch(`http://127.0.0.1:8000/company-images/${company.image_id}`)
+            fetch(`${API_URL}/company-images/${company.image_id}`)
               .then((res) => res.json())
               .then((data: CompanyImage) => ({ id: company.image_id, url: data.image_url }))
               .catch(() => ({ id: company.image_id, url: "/placeholder.svg" }))

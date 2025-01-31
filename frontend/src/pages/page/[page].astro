@@ -4,8 +4,10 @@ import { CompanyList } from '../../components/CompanyList';
 import { Pagination } from '../../components/Pagination';
 import type { ApiResponse } from '../../types';
 
+import { API_URL } from "../../contants.js";
+
 export async function getStaticPaths() {
-  const response = await fetch('http://127.0.0.1:8000/companies/?page=1&size=9');
+  const response = await fetch(`${API_URL}/companies/?page=1&size=9`);
   if (!response.ok) {
     throw new Error("Failed to fetch total pages");
   }
@@ -16,7 +18,7 @@ export async function getStaticPaths() {
     const page = i + 1;
     return {
       params: { page: page.toString() },
-      props: { apiUrl: `http://127.0.0.1:8000/companies/?page=${page}&size=9` },
+      props: { apiUrl: `${API_URL}/companies/?page=${page}&size=9` },
     };
   });
 }

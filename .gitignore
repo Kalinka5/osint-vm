@@ -3,3 +3,4 @@ __pycache__
 .vscode
 .env
 backend/companies.db
+osint-agency.online/
