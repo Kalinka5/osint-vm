@@ -24,6 +24,7 @@ class Tags(Enum):
 origins = [
     "https://d47af803.osint-agency-online.pages.dev",
     "https://2b75ca62.osint-agency-online.pages.dev",
+    "https://osint-backend.osint-agency.online",
     "http://localhost:4321",
 ]
 
